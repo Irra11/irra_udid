@@ -1,69 +1,108 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
-import sqlite3
+# -*- coding: utf-8 -*-
+from flask import Flask, request, redirect, Response
+import plistlib
+import uuid
 import requests
-from pydantic import BaseModel
-from datetime import datetime
 
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+app = Flask(__name__)
 
-BOT_TOKEN = "7159490173:AAEfsvxSCSLWiGqBCAm0uNNUEo7k11x3-UM"
-SUCCESS_PHOTO = "https://i.pinimg.com/originals/23/50/8e/23508e8b1e8dea194d9e06ae507e4afc.gif"
+# 🔐 YOUR USER BOT TOKEN (same as main.py)
+USER_BOT_TOKEN = "7159490173:AAEfsvxSCSLWiGqBCAm0uNNUEo7k11x3-UM"
 
-def init_db():
-    conn = sqlite3.connect("orders.db")
-    conn.execute('CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, user_id TEXT, username TEXT, udid TEXT, price TEXT, status TEXT, date TEXT)')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-class OrderIn(BaseModel):
-    user_id: str
-    username: str
-    udid: str
-    price: str
-
-@app.post("/api/v1/save_order")
-async def save_order(order: OrderIn):
-    conn = sqlite3.connect("orders.db")
-    conn.execute("INSERT INTO orders (user_id, username, udid, price, status, date) VALUES (?,?,?,?,?,?)",
-                 (order.user_id, order.username, order.udid, order.price, "PENDING", datetime.now().strftime("%Y-%m-%d %H:%M")))
-    conn.commit()
-    conn.close()
-    return {"status": "ok"}
-
-@app.get("/")
-async def dashboard(request: Request):
-    conn = sqlite3.connect("orders.db")
-    conn.row_factory = sqlite3.Row
-    orders = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
-    stats = {"total": len(orders), "pending": len([o for o in orders if o['status'] == 'PENDING']), 
-             "done": len([o for o in orders if o['status'] == 'COMPLETED'])}
-    conn.close()
-    return templates.TemplateResponse("index.html", {"request": request, "orders": orders, "stats": stats})
-
-@app.post("/action/{action}/{order_id}/{user_id}")
-async def admin_action(action: str, order_id: int, user_id: str, file: UploadFile = File(None)):
-    conn = sqlite3.connect("orders.db")
+# ===============================
+# DOWNLOAD ROUTE (WITH USER ID)
+# ===============================
+@app.route('/download')
+def download():
+    uid = request.args.get("uid")
     
-    if action == "approve":
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-        requests.post(url, json={"chat_id": user_id, "photo": SUCCESS_PHOTO, "caption": "✅ ការបញ្ជាទិញត្រូវបានអនុម័ត!"})
-        conn.execute("UPDATE orders SET status='APPROVED' WHERE id=?", (order_id,))
-    
-    elif action == "upload" and file:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
-        requests.post(url, data={"chat_id": user_id, "caption": "🎁 នេះជាឯកសាររបស់អ្នក!"}, files={"document": (file.filename, await file.read())})
-        conn.execute("UPDATE orders SET status='COMPLETED' WHERE id=?", (order_id,))
-    
-    elif action == "reject":
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        requests.post(url, json={"chat_id": user_id, "text": "❌ សំណើររបស់អ្នកត្រូវបានបដិសេធ។"})
-        conn.execute("UPDATE orders SET status='REJECTED' WHERE id=?", (order_id,))
+    if not uid:
+        return "Missing Telegram User ID"
 
-    conn.commit()
-    conn.close()
-    return RedirectResponse(url="/", status_code=303)
+    return redirect(f"/api/get-profile?uid={uid}")
+
+
+# ===============================
+# GENERATE UDID PROFILE
+# ===============================
+@app.route('/api/get-profile', methods=['GET'])
+def get_profile():
+    uid = request.args.get("uid", "unknown")
+    root_url = request.url_root.replace("http://", "https://")
+    enroll_url = f"{root_url}api/enroll?uid={uid}"
+
+    profile_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <dict>
+        <key>URL</key>
+        <string>{enroll_url}</string>
+        <key>DeviceAttributes</key>
+        <array>
+            <string>UDID</string>
+            <string>PRODUCT</string>
+            <string>VERSION</string>
+        </array>
+    </dict>
+    <key>PayloadOrganization</key>
+    <string>IRRA ESIGN</string>
+    <key>PayloadDisplayName</key>
+    <string>Get Device UDID</string>
+    <key>PayloadIdentifier</key>
+    <string>com.irra.udid.{uuid.uuid4()}</string>
+    <key>PayloadUUID</key>
+    <string>{uuid.uuid4()}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadType</key>
+    <string>Profile Service</string>
+</dict>
+</plist>"""
+
+    return Response(
+        profile_xml,
+        mimetype="application/x-apple-aspen-config",
+        headers={
+            "Content-Disposition": "attachment; filename=udid.mobileconfig"
+        }
+    )
+
+
+# ===============================
+# AUTO SEND UDID TO TELEGRAM BOT
+# ===============================
+@app.route('/api/enroll', methods=['POST'])
+def enroll():
+    try:
+        uid = request.args.get("uid")
+        plist_data = plistlib.loads(request.data)
+
+        udid = plist_data.get("UDID", "Unknown")
+        product = plist_data.get("PRODUCT", "Unknown")
+        version = plist_data.get("VERSION", "Unknown")
+
+        # Send ONLY UDID (so your bot detects it)
+        message = udid
+
+        if uid:
+            requests.post(
+                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/sendMessage",
+                data={
+                    "chat_id": uid,
+                    "text": message
+                },
+                timeout=10
+            )
+
+        return "SUCCESS"
+
+    except Exception as e:
+        return str(e), 500
+
+
+@app.route('/')
+def home():
+    return "UDID API 24/7 Running 🚀"
