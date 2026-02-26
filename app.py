@@ -9,8 +9,6 @@ app = Flask(__name__)
 
 # 🔐 CONFIGURATION
 USER_BOT_TOKEN = "7159490173:AAEfsvxSCSLWiGqBCAm0uNNUEo7k11x3-UM"
-# The username of your bot (without @) to redirect user back
-BOT_USERNAME = "irra_esign_bot" 
 
 @app.route('/download')
 def download():
@@ -22,8 +20,7 @@ def download():
 @app.route('/api/get-profile', methods=['GET'])
 def get_profile():
     uid = request.args.get("uid", "unknown")
-    # Force HTTPS for Apple profiles
-    root_url = "https://panelbottelegram.onrender.com/"
+    root_url = request.url_root.replace("http://", "https://")
     enroll_url = f"{root_url}api/enroll?uid={uid}"
 
     profile_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -42,9 +39,9 @@ def get_profile():
         </array>
     </dict>
     <key>PayloadOrganization</key>
-    <string>PELLA ESIGN</string>
+    <string>Pella Esign</string>
     <key>PayloadDisplayName</key>
-    <string>Get Device UDID</string>
+    <string>Pella UDID Auto-Installer</string>
     <key>PayloadIdentifier</key>
     <string>com.pella.udid.{uuid.uuid4()}</string>
     <key>PayloadUUID</key>
@@ -59,42 +56,43 @@ def get_profile():
     return Response(
         profile_xml,
         mimetype="application/x-apple-aspen-config",
-        headers={"Content-Disposition": "attachment; filename=udid.mobileconfig"}
+        headers={"Content-Disposition": "attachment; filename=pella_udid.mobileconfig"}
     )
 
 @app.route('/api/enroll', methods=['POST'])
 def enroll():
     try:
         uid = request.args.get("uid")
-        # Apple sends data in the body
         plist_data = plistlib.loads(request.data)
         udid = plist_data.get("UDID", "Unknown")
 
-        if uid and udid != "Unknown":
-            # Send message with a button back to the user via Bot API
+        if uid:
+            # We send a message with a button back to the user
+            # This allows the main.py to handle the 'click' event
             keyboard = {
                 "inline_keyboard": [[
-                    {"text": "✅ យល់ព្រមប្រើ UDID នេះ", "callback_data": f"set_udid_{udid}"}
+                    {"text": "✅ Click to Confirm UDID", "callback_data": f"set_udid_{udid}"}
                 ]]
             }
             
             payload = {
                 "chat_id": uid,
-                "text": f"📱 **រកឃើញ UDID របស់អ្នកហើយ!**\n\n🆔 `{udid}`\n\nសូមចុចប៊ូតុងខាងក្រោមដើម្បីបន្តការទិញ៖",
+                "text": f"📱 **រកឃើញ UDID របស់អ្នកហើយ!**\n\n🆔 `{udid}`\n\nសូមចុចប៊ូតុងខាងក្រោមដើម្បីបន្ត៖",
                 "parse_mode": "Markdown",
                 "reply_markup": json.dumps(keyboard)
             }
+            
             requests.post(f"https://api.telegram.org/bot{USER_BOT_TOKEN}/sendMessage", data=payload)
 
-        # Redirect user back to Telegram automatically
-        return redirect(f"https://t.me/{BOT_USERNAME}", code=302)
+        # Redirect the iPhone user back to Telegram automatically
+        return redirect("https://t.me/pella_esign_bot", code=302) # Change to your bot username
 
     except Exception as e:
         return str(e), 500
 
 @app.route('/')
 def home():
-    return "PELLA UDID API RUNNING 🚀"
+    return "Pella UDID API is Online 🚀"
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
