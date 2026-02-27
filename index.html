@@ -3,92 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Get Device UDID | Auto Fetch</title>
+    <title>Get Device UDID | Luffy Edition</title>
+    
+    <!-- Resources -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Hanuman:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hanuman:wght@400;700&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
 
     <style>
-        :root { --primary: #007AFF; --accent: #5856D6; --bg: #f2f2f7; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Hanuman', sans-serif; }
+        :root {
+            --nika-white: #ffffff;
+            --nika-glow: rgba(255, 255, 255, 0.8);
+            --primary-red: #ff3b30;
+            --dark-overlay: rgba(0, 0, 0, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Hanuman', sans-serif; user-select: none; }
+
         body {
-            background-color: var(--bg);
-            background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                              radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-            background-attachment: fixed; min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #fff; padding: 20px;
+            background: #050505;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 20px;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 30px; width: 100%; max-width: 450px; padding: 40px 30px; text-align: center;
+
+        /* Luffy Dynamic Background */
+        .bg-video {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('') center/cover no-repeat;
+            z-index: -1;
+            filter: brightness(0.5);
         }
-        .icon-circle {
-            width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 22px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 35px;
+
+        .smoke-overlay {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: url('https://www.transparentpng.com/download/smoke/white-smoke-transparent-background-4.png') center/cover;
+            opacity: 0.15;
+            mix-blend-mode: screen;
+            animation: cloudMove 25s linear infinite;
+            pointer-events: none;
         }
-        h1 { font-size: 24px; margin-bottom: 10px; }
-        .steps-container { text-align: left; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; margin-bottom: 30px; font-size: 13px; }
-        .step-item { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
-        .step-num { min-width: 24px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        #resultArea { display: none; }
-        .udid-display {
-            background: #000; padding: 20px; border-radius: 15px; font-family: monospace; color: #00ffcc; 
-            word-break: break-all; border: 1px solid rgba(0, 255, 204, 0.3); margin-bottom: 20px;
+
+        @keyframes cloudMove {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-5%, 2%) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
         }
-        .btn-main {
-            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; 
-            background: #fff; color: #000; padding: 18px; border-radius: 18px; font-weight: 700; text-decoration: none; cursor: pointer;
+
+        /* 3D Premium Card */
+        .main-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 40px;
+            width: 100%;
+            max-width: 440px;
+            padding: 45px 30px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            transform-style: preserve-3d;
+            position: relative;
         }
-        .btn-main.primary { background: var(--primary); color: #fff; }
+
+        .main-card::after {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, #fff, transparent, #fff);
+            border-radius: 40px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Logo Animation */
+        .nika-avatar {
+            width: 110px; height: 110px;
+            background: #fff;
+            border-radius: 35px;
+            margin: 0 auto 25px;
+            padding: 5px;
+            box-shadow: 0 0 30px var(--nika-glow);
+            transform: translateZ(50px);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateZ(50px) translateY(0); } 50% { transform: translateZ(50px) translateY(-10px); } }
+
+        .nika-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 30px; }
+
+        h1 {
+            font-size: 26px; font-weight: 900; color: #fff;
+            margin-bottom: 8px; text-transform: uppercase;
+            transform: translateZ(30px); text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .tagline { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 30px; transform: translateZ(20px); }
+
+        /* Step UI like Irra Esign */
+        .step-list {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transform: translateZ(15px);
+        }
+
+        .step-item {
+            display: flex; align-items: center; gap: 15px; margin-bottom: 12px;
+            font-size: 13.5px; color: #eee; line-height: 1.4;
+        }
+        .step-item:last-child { margin-bottom: 0; }
+
+        .step-badge {
+            min-width: 24px; height: 24px;
+            background: var(--primary-red);
+            color: #fff; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 12px;
+            box-shadow: 0 4px 10px rgba(255, 59, 48, 0.4);
+        }
+
+        /* Result Display */
+        .udid-result-box {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed #00ffcc;
+            padding: 20px; border-radius: 20px;
+            margin-bottom: 25px; transform: translateZ(40px);
+        }
+        .udid-val {
+            font-family: 'Courier New', monospace;
+            color: #00ffcc; font-size: 15px; font-weight: 700;
+            word-break: break-all; text-shadow: 0 0 8px rgba(0, 255, 204, 0.4);
+        }
+
+        /* Pro Buttons */
+        .btn-action {
+            width: 100%;
+            background: #fff;
+            color: #000;
+            padding: 18px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateZ(50px);
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-action:active { transform: translateZ(50px) scale(0.95); }
+        
+        .btn-download { background: linear-gradient(45deg, #fff, #e0e0e0); }
+        .btn-copy { background: #00ffcc; color: #000; box-shadow: 0 10px 25px rgba(0, 255, 204, 0.3); }
+
+        .footer {
+            margin-top: 35px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+
+        /* ===== PRO HEADER ===== */
+.pro-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 999;
+    padding: 12px 20px;
+}
+
+.header-content {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffffff, #dcdcdc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(255,255,255,0.25);
+}
+
+.brand-text h2 {
+    font-size: 16px;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.brand-text span {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+}
+
+.header-right .status-badge {
+    background: rgba(0,255,170,0.1);
+    color: #00ffcc;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid rgba(0,255,204,0.25);
+    box-shadow: 0 0 12px rgba(0,255,204,0.2);
+}
+
+.status-badge i {
+    font-size: 8px;
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
+
+/* push card down so header doesn't cover */
+body {
+    padding-top: 80px;
+}
     </style>
 </head>
-<body>
-
-    <div class="glass-card animate__animated animate__fadeIn">
-        <div class="icon-circle"><i class="fas fa-fingerprint"></i></div>
-
-        <!-- STATE 1: GET UDID -->
-        <div id="initArea">
-            <h1>Get Device UDID</h1>
-            <div class="steps-container">
-                <div class="step-item"><div class="step-num">1</div><span>ចុចប៊ូតុង "ទាញយក Profile"</span></div>
-                <div class="step-item"><div class="step-num">2</div><span>ចុច "Allow" រួចចូលទៅ Settings > Install</span></div>
-                <div class="step-item"><div class="step-num">3</div><span>ប្រព័ន្ធនឹងបង្ហាញ UDID នៅទីនេះស្វ័យប្រវត្ត</span></div>
+<body oncontextmenu="return false;"> <!-- Disable Right Click -->
+    <!-- PRO HEADER -->
+<header class="pro-header">
+    <div class="header-content">
+        <div class="header-left">
+            <div class="logo-box">
+                <i class="fas fa-shield-alt"></i>
             </div>
-            
-            <!-- UPDATE THIS LINK TO YOUR RENDER URL -->
-            <a href="https://panelbottelegram.onrender.com/api/get-profile" class="btn-main primary">
-                <i class="fas fa-download"></i> ទាញយក Profile
+            <div class="brand-text">
+                <h2>Irra UDID Service</h2>
+                <span>សុវត្ថិភាពខ្ពស់ និងលឿនរហ័សបំផុត</span>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <a href="#" class="status-badge">
+                <i class="fas fa-circle"></i> ONLINE
+            </a>
+        </div>
+    </div>
+</header>
+
+    <div class="bg-video"></div>
+    <div class="smoke-overlay"></div>
+
+    <!-- Main 3D Card -->
+    <div class="main-card animate__animated animate__zoomIn" data-tilt data-tilt-max="12" data-tilt-speed="500" data-tilt-glare data-tilt-max-glare="0.1">
+        
+        <div class="nika-avatar">
+            <img src="https://i.pinimg.com/originals/be/cb/ca/becbca09cc81c9ecd1ce133c836b3f25.gif" alt="Luffy">
+        </div>
+
+        <!-- Initial View -->
+        <div id="setup-view">
+            <h1>ស្វែងរក UDID ទូរស័ព្ទរបស់អ្នក</h1>
+            <p class="tagline">បៀបដំណើរការ
+
+បើកទំព័រនេះលើ iPhone ឬ iPad របស់អ្នក ដោយប្រើកម្មវិធី Safari</p>
+
+            <div class="step-list">
+                <div class="step-item">
+                    <div class="step-badge">១</div>
+                    <span>ចុចប៊ូតុង "ទាញយក Profile" ខាងក្រោម</span>
+                </div>
+                <div class="step-item">
+                    <div class="step-badge">២</div>
+                    <span>ចុច Allow រួចចូលទៅ Settings > Profile Downloaded > Install</span>
+                </div>
+                <div class="step-item">
+                    <div class="step-badge">៣</div>
+                    <span>ប្រព័ន្ធនឹងនាំអ្នកត្រលប់មកវិញជាមួយលេខ UDID</span>
+                </div>
+            </div>
+
+            <a href="https://panelbottelegram.onrender.com/api/get-profile" class="btn-action btn-download">
+                <i class="fas fa-download"></i> ទាញយក PROFILE
             </a>
         </div>
 
-        <!-- STATE 2: SHOW UDID -->
-        <div id="resultArea" class="animate__animated animate__zoomIn">
-            <h1 style="color: #00ffcc;">UDID របស់អ្នក</h1>
-            <div class="udid-display" id="udidText">Fetching...</div>
-            <button class="btn-main" onclick="copyUDID()">
-                <i class="fas fa-copy"></i> ចម្លងទុក (Copy)
+        <!-- Result View -->
+        <div id="result-view" style="display: none;">
+            <h1 style="color: #00ffcc;">រកឃើញ UDID!</h1>
+            <p class="tagline">សូមចម្លងលេខ UDID របស់អ្នកខាងក្រោម</p>
+            
+            <div class="udid-result-box" id="udidContainer">
+                <div class="udid-val" id="udidDisplay">FETCHING...</div>
+            </div>
+
+            <button class="btn-action btn-copy" onclick="copyUDID()" id="copyBtn">
+                <i class="fas fa-copy"></i> ចម្លងយក UDID
             </button>
         </div>
+
+        <div class="footer">Irra Esign Store </div>
     </div>
 
     <script>
-        // When page loads, check if UDID is in the URL
-        window.onload = function() {
+        // 1. Initialize 3D Tilt Effect
+        VanillaTilt.init(document.querySelector(".main-card"), {
+            max: 12,
+            speed: 500,
+            glare: true,
+            "max-glare": 0.15,
+        });
+
+        // 2. Detection Logic
+        window.addEventListener('load', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const udid = urlParams.get('udid');
+
             if (udid) {
-                document.getElementById('initArea').style.display = 'none';
-                document.getElementById('resultArea').style.display = 'block';
-                document.getElementById('udidText').innerText = udid;
+                document.getElementById('setup-view').style.display = 'none';
+                document.getElementById('result-view').style.display = 'block';
+                document.getElementById('udidContainer').style.display = 'block';
+                document.getElementById('udidDisplay').innerText = udid;
+                
+                // Clear URL parameters
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
-        };
+        });
 
+        // 3. Copy Function
         function copyUDID() {
-            const text = document.getElementById('udidText').innerText;
-            navigator.clipboard.writeText(text);
-            alert("Copied!");
+            const udid = document.getElementById('udidDisplay').innerText;
+            const btn = document.getElementById('copyBtn');
+            
+            navigator.clipboard.writeText(udid).then(() => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> បានចម្លងរួចរាល់!';
+                btn.style.background = "#ffffff";
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = "#00ffcc";
+                }, 2000);
+            });
         }
+
+        // 4. Security: Disable Keys (F12, Ctrl+U, etc.)
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) return false; // F12
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false; // Ctrl+Shift+I
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false; // Ctrl+Shift+C
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false; // Ctrl+Shift+J
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ctrl+U
+        };
     </script>
 </body>
 </html>
