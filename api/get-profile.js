@@ -20,7 +20,7 @@ export default function handler(req, res) {
     <key>PayloadOrganization</key>
     <string>Irra UDID</string>
     <key>PayloadDisplayName</key>
-    <string>Get Device UDID r</string>
+    <string>Get Device UDID</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadUUID</key>
